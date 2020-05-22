@@ -37,7 +37,8 @@ enum PoolTxnStatus : uint8_t {
   INVALID_TO_ACCOUNT = 16,
   FAIL_CONTRACT_ACCOUNT_CREATION = 17,
   FAIL_SCILLA_LIB = 18,
-  FAIL_CONTRACT_INIT = 19
+  FAIL_CONTRACT_INIT = 19,
+  INCORRECT_TXN_TYPE = 20
 };
 
 inline bool IsPoolTxnDropped(PoolTxnStatus code) {
@@ -49,10 +50,9 @@ using HashCodeMap = std::unordered_map<TxnHash, PoolTxnStatus>;
 class DroppedTxnContainer {
  private:
   std::unordered_map<uint64_t, std::vector<TxnHash>> m_txnHashExpiration;
-
- public:
   HashCodeMap m_txnCode;
 
+ public:
   bool insert(const TxnHash& txhash, const PoolTxnStatus status,
               const uint64_t& epochNum) {
     m_txnHashExpiration[epochNum].emplace_back(txhash);

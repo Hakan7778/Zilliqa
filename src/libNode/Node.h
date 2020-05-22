@@ -675,6 +675,8 @@ class Node : public Executable {
 
   std::unordered_map<TxnHash, PoolTxnStatus> GetUnconfirmedTxns() const;
 
+  std::unordered_map<TxnHash, PoolTxnStatus> GetDroppedTxns() const;
+
   uint32_t CalculateShardLeaderFromDequeOfNode(uint16_t lastBlockHash,
                                                uint32_t sizeOfShard,
                                                const DequeOfNode& shardMembers);

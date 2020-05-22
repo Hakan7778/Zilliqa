@@ -832,22 +832,41 @@ void Node::PutProcessedInUnconfirmedTxns() {
 }
 
 PoolTxnStatus Node::IsTxnInMemPool(const TxnHash& txhash) const {
-  shared_lock<shared_timed_mutex> g(m_unconfirmedTxnsMutex, defer_lock);
-  // Try to lock for 100 ms
-  if (!g.try_lock_for(chrono::milliseconds(100))) {
-    return PoolTxnStatus::ERROR;
-  }
-  const auto res = m_unconfirmedTxns.find(txhash);
-  if (res == m_unconfirmedTxns.end()) {
+  auto findTxnHashStatus =
+      [txhash](shared_timed_mutex& mut,
+               const HashCodeMap& t_hashCodeMap) -> PoolTxnStatus {
+    shared_lock<shared_timed_mutex> g(mut, defer_lock);
+    // Try to lock for 100 ms
+    if (!g.try_lock_for(chrono::milliseconds(100))) {
+      return PoolTxnStatus::ERROR;
+    }
+    const auto res = t_hashCodeMap.find(txhash);
+    if (res != t_hashCodeMap.end()) {
+      return res->second;
+    }
+
     return PoolTxnStatus::NOT_PRESENT;
+  };
+
+  const auto& unconfirmStatus =
+      findTxnHashStatus(m_unconfirmedTxnsMutex, m_unconfirmedTxns);
+
+  if (LOOKUP_NODE_MODE && (unconfirmStatus != PoolTxnStatus::NOT_PRESENT)) {
+    return findTxnHashStatus(m_droppedTxnsMutex,
+                             m_droppedTxns.GetHashCodeMap());
   }
-  return res->second;
+  return unconfirmStatus;
 }
 
 unordered_map<TxnHash, PoolTxnStatus> Node::GetUnconfirmedTxns() const {
   shared_lock<shared_timed_mutex> g(m_unconfirmedTxnsMutex);
 
   return m_unconfirmedTxns;
+}
+
+HashCodeMap Node::GetDroppedTxns() const {
+  shared_lock<shared_timed_mutex> g(m_droppedTxnsMutex);
+  return m_droppedTxns.GetHashCodeMap();
 }
 
 bool Node::IsUnconfirmedTxnEmpty() const {

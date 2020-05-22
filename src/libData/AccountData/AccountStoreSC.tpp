@@ -706,7 +706,7 @@ bool AccountStoreSC<MAP>::UpdateAccounts(const uint64_t& blockNum,
     }
     default: {
       LOG_GENERAL(WARNING, "Txn is not typed correctly")
-      error_code = PoolTxnStatus::ERROR;
+      error_code = PoolTxnStatus::INCORRECT_TXN_TYPE;
       return false;
     }
   }

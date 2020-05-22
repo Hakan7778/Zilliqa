@@ -1314,7 +1314,14 @@ bool Node::AddPendingTxn(const HashCodeMap& pendingTxns, const PubKey& pubkey,
   unique_lock<shared_timed_mutex> g2(m_droppedTxnsMutex, adopt_lock);
   for (const auto& entry : pendingTxns) {
     LOG_GENERAL(INFO, " " << entry.first << " " << entry.second);
-    // Check for already confirmed
+
+    if (BlockStorage::GetBlockStorage().CheckTxBody(entry.first)) {
+      LOG_GENERAL(INFO, "TranHash: " << entry.first << " sent by pubkey "
+                                     << pubkey << " of shard " << shardId
+                                     << " is already confirmed");
+      continue;
+    }
+
     if (!IsPoolTxnDropped(entry.second)) {
       m_unconfirmedTxns.emplace(entry);
     } else {
