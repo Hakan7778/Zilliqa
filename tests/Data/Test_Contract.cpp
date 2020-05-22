@@ -138,9 +138,10 @@ BOOST_AUTO_TEST_CASE(loopytreecall) {
     Transaction tx(DataConversion::Pack(CHAIN_ID, 1), nonce, Address(), owner,
                    0, PRECISION_MIN_VALUE, 20000, test.code, data);
     TransactionReceipt tr;
+    PoolTxnStatus error_code;
     AccountStore::GetInstance().UpdateAccountsTemp(
         ScillaTestUtil::GetBlockNumberFromJson(test.blockchain), 1, true, tx,
-        tr);
+        tr, error_code);
     nonce++;
   }
 
@@ -317,7 +318,9 @@ BOOST_AUTO_TEST_CASE(testScillaLibrary) {
   Transaction tx1(DataConversion::Pack(CHAIN_ID, 1), nonce, NullAddress, owner,
                   0, PRECISION_MIN_VALUE, 50000, t1.code, data1);
   TransactionReceipt tr1;
-  AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx1, tr1);
+  PoolTxnStatus error_code;
+  AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx1, tr1,
+                                                 error_code);
   Account* account1 = AccountStore::GetInstance().GetAccountTemp(libAddr1);
   // We should now have a new account.
   BOOST_CHECK_MESSAGE(account1 != nullptr,
@@ -364,7 +367,8 @@ BOOST_AUTO_TEST_CASE(testScillaLibrary) {
   Transaction tx2(DataConversion::Pack(CHAIN_ID, 1), nonce, NullAddress, owner,
                   0, PRECISION_MIN_VALUE, 50000, t2.code, data2);
   TransactionReceipt tr2;
-  AccountStore::GetInstance().UpdateAccountsTemp(bnum2, 1, true, tx2, tr2);
+  AccountStore::GetInstance().UpdateAccountsTemp(bnum2, 1, true, tx2, tr2,
+                                                 error_code);
   Account* account2 = AccountStore::GetInstance().GetAccountTemp(libAddr2);
   // We should now have a new account.
   BOOST_CHECK_MESSAGE(account2 != nullptr,
@@ -419,7 +423,8 @@ BOOST_AUTO_TEST_CASE(testScillaLibrary) {
   Transaction tx3(DataConversion::Pack(CHAIN_ID, 1), nonce, NullAddress, owner,
                   0, PRECISION_MIN_VALUE, 50000, t3.code, data3);
   TransactionReceipt tr3;
-  AccountStore::GetInstance().UpdateAccountsTemp(bnum3, 1, true, tx3, tr3);
+  AccountStore::GetInstance().UpdateAccountsTemp(bnum3, 1, true, tx3, tr3,
+                                                 error_code);
   Account* account3 = AccountStore::GetInstance().GetAccountTemp(contrAddr1);
   // We should now have a new account.
   BOOST_CHECK_MESSAGE(account3 != nullptr,
@@ -442,7 +447,8 @@ BOOST_AUTO_TEST_CASE(testScillaLibrary) {
   Transaction tx4(DataConversion::Pack(CHAIN_ID, 1), nonce, contrAddr1, owner,
                   amount, PRECISION_MIN_VALUE, 50000, {}, dataHi);
   TransactionReceipt tr4;
-  if (AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx4, tr4)) {
+  if (AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx4, tr4,
+                                                     error_code)) {
     nonce++;
   }
 
