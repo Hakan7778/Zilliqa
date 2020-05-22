@@ -3093,9 +3093,6 @@ void Lookup::CommitTxBlocks(const vector<TxBlock>& txBlocks) {
       return;
     }
   }
-  if (LOOKUP_NODE_MODE) {
-    m_mediator.m_node->ClearUnconfirmedTxn();
-  }
 
   for (const auto& txBlock : txBlocks) {
     LOG_EPOCH(INFO, m_mediator.m_currentEpochNum, txBlock);
@@ -3147,6 +3144,10 @@ void Lookup::CommitTxBlocks(const vector<TxBlock>& txBlocks) {
       m_mediator.m_txBlockChain.GetLastBlock().GetHeader().GetBlockNum();
   // To trigger m_isVacuousEpoch calculation
   m_mediator.IncreaseEpochNum();
+
+  if (LOOKUP_NODE_MODE) {
+    m_mediator.m_node->ClearUnconfirmedTxn();
+  }
 
   if ((LOOKUP_NODE_MODE && ARCHIVAL_LOOKUP &&
        m_syncType == SyncType::NEW_LOOKUP_SYNC) ||

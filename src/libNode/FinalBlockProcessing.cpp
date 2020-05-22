@@ -854,9 +854,6 @@ bool Node::ProcessFinalBlockCore(uint64_t& dsBlockNumber,
       }
     }
   }
-  if (LOOKUP_NODE_MODE) {
-    ClearUnconfirmedTxn();
-  }
 
   if (!BlockStorage::GetBlockStorage().PutStateDelta(
           txBlock.GetHeader().GetBlockNum(), stateDelta)) {
@@ -993,6 +990,10 @@ bool Node::ProcessFinalBlockCore(uint64_t& dsBlockNumber,
   // then I know I'm not), I can start doing PoW again
   m_mediator.UpdateDSBlockRand();
   m_mediator.UpdateTxBlockRand();
+
+  if (LOOKUP_NODE_MODE) {
+    ClearUnconfirmedTxn();
+  }
 
   LOG_GENERAL(INFO, "toSendPendingTxn " << toSendPendingTxn);
 
@@ -1304,10 +1305,21 @@ bool Node::AddPendingTxn(const HashCodeMap& pendingTxns, const PubKey& pubkey,
     }
   }
 
-  unique_lock<shared_timed_mutex> g(m_unconfirmedTxnsMutex);
+  const auto& currentEpochNum =
+      m_mediator.m_txBlockChain.GetLastBlock().GetHeader().GetBlockNum();
+
+  lock(m_unconfirmedTxnsMutex, m_droppedTxnsMutex);
+
+  unique_lock<shared_timed_mutex> g1(m_unconfirmedTxnsMutex, adopt_lock);
+  unique_lock<shared_timed_mutex> g2(m_droppedTxnsMutex, adopt_lock);
   for (const auto& entry : pendingTxns) {
     LOG_GENERAL(INFO, " " << entry.first << " " << entry.second);
-    m_unconfirmedTxns.emplace(entry);
+    // Check for already confirmed
+    if (!IsPoolTxnDropped(entry.second)) {
+      m_unconfirmedTxns.emplace(entry);
+    } else {
+      m_droppedTxns.insert(entry.first, entry.second, currentEpochNum);
+    }
   }
   return true;
 }

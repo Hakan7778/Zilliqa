@@ -144,6 +144,9 @@ class Node : public Executable {
   std::shared_timed_mutex mutable m_unconfirmedTxnsMutex;
   std::unordered_map<TxnHash, PoolTxnStatus> m_unconfirmedTxns;
 
+  std::shared_timed_mutex mutable m_droppedTxnsMutex;
+  DroppedTxnContainer m_droppedTxns;
+
   std::mutex m_mutexMBnForwardedTxnBuffer;
   std::unordered_map<uint64_t, std::vector<MBnForwardedTxnEntry>>
       m_mbnForwardedTxnBuffer;
@@ -228,7 +231,8 @@ class Node : public Executable {
 
   void ReinstateMemPool(
       const std::map<Address, std::map<uint64_t, Transaction>>& addrNonceTxnMap,
-      const std::vector<Transaction>& gasLimitExceededTxnBuffer);
+      const std::vector<Transaction>& gasLimitExceededTxnBuffer,
+      const std::vector<std::pair<TxnHash, PoolTxnStatus>>& droppedTxns);
 
   // internal calls from ProcessVCDSBlocksMessage
   void LogReceivedDSBlockDetails(const DSBlock& dsblock);

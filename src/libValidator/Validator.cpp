@@ -40,19 +40,22 @@ bool Validator::VerifyTransaction(const Transaction& tran) {
 }
 
 bool Validator::CheckCreatedTransaction(const Transaction& tx,
-                                        TransactionReceipt& receipt) const {
+                                        TransactionReceipt& receipt,
+                                        PoolTxnStatus& error_code) const {
   if (LOOKUP_NODE_MODE) {
     LOG_GENERAL(WARNING,
                 "Validator::CheckCreatedTransaction not expected to be "
                 "called from LookUp node.");
     return true;
   }
+  error_code = PoolTxnStatus::NOT_PRESENT;
   // LOG_MARKER();
 
   // LOG_GENERAL(INFO, "Tran: " << tx.GetTranID());
 
   if (DataConversion::UnpackA(tx.GetVersion()) != CHAIN_ID) {
     LOG_GENERAL(WARNING, "CHAIN_ID incorrect");
+    error_code = PoolTxnStatus::VERIF_ERROR;
     return false;
   }
 
@@ -60,6 +63,7 @@ bool Validator::CheckCreatedTransaction(const Transaction& tx,
     LOG_GENERAL(WARNING, "Transaction version incorrect "
                              << "Expected:" << TRANSACTION_VERSION << " Actual:"
                              << DataConversion::UnpackB(tx.GetVersion()));
+    error_code = PoolTxnStatus::VERIF_ERROR;
     return false;
   }
 
@@ -69,6 +73,7 @@ bool Validator::CheckCreatedTransaction(const Transaction& tx,
 
   if (IsNullAddress(fromAddr)) {
     LOG_GENERAL(WARNING, "Invalid address for issuing transactions");
+    error_code = PoolTxnStatus::INVALID_FROM_ACCOUNT;
     return false;
   }
 
@@ -77,6 +82,7 @@ bool Validator::CheckCreatedTransaction(const Transaction& tx,
     LOG_GENERAL(WARNING, "fromAddr not found: " << fromAddr
                                                 << ". Transaction rejected: "
                                                 << tx.GetTranID());
+    error_code = PoolTxnStatus::INVALID_FROM_ACCOUNT;
     return false;
   }
 
@@ -87,6 +93,7 @@ bool Validator::CheckCreatedTransaction(const Transaction& tx,
                   << " From Account  = 0x" << fromAddr << " Balance = "
                   << AccountStore::GetInstance().GetBalance(fromAddr)
                   << " Debit Amount = " << tx.GetAmount());
+    error_code = PoolTxnStatus::INSUFFICIENT_BALANCE;
     return false;
   }
 
@@ -94,7 +101,8 @@ bool Validator::CheckCreatedTransaction(const Transaction& tx,
 
   return AccountStore::GetInstance().UpdateAccountsTemp(
       m_mediator.m_currentEpochNum, m_mediator.m_node->getNumShards(),
-      m_mediator.m_ds->m_mode != DirectoryService::Mode::IDLE, tx, receipt);
+      m_mediator.m_ds->m_mode != DirectoryService::Mode::IDLE, tx, receipt,
+      error_code);
 }
 
 bool Validator::CheckCreatedTransactionFromLookup(const Transaction& tx) {

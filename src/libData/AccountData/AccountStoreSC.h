@@ -219,7 +219,7 @@ class AccountStoreSC : public AccountStoreBase<MAP> {
   /// external interface for processing txn
   bool UpdateAccounts(const uint64_t& blockNum, const unsigned int& numShards,
                       const bool& isDS, const Transaction& transaction,
-                      TransactionReceipt& receipt);
+                      TransactionReceipt& receipt, PoolTxnStatus& error_code);
 
  public:
   /// Initialize the class

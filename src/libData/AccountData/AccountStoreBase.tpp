@@ -55,15 +55,18 @@ bool AccountStoreBase<MAP>::Deserialize(const bytes& src, unsigned int offset) {
 
 template <class MAP>
 bool AccountStoreBase<MAP>::UpdateAccounts(const Transaction& transaction,
-                                           TransactionReceipt& receipt) {
+                                           TransactionReceipt& receipt,
+                                           PoolTxnStatus& error_code) {
   const PubKey& senderPubKey = transaction.GetSenderPubKey();
   const Address fromAddr = Account::GetAddressFromPublicKey(senderPubKey);
   Address toAddr = transaction.GetToAddr();
   const uint128_t& amount = transaction.GetAmount();
+  error_code = PoolTxnStatus::NOT_PRESENT;
 
   Account* fromAccount = this->GetAccount(fromAddr);
   if (fromAccount == nullptr) {
     LOG_GENERAL(WARNING, "sender " << fromAddr.hex() << " not exist");
+    error_code = PoolTxnStatus::INVALID_FROM_ACCOUNT;
     return false;
   }
 
@@ -73,6 +76,7 @@ bool AccountStoreBase<MAP>::UpdateAccounts(const Transaction& transaction,
                     << transaction.GetGasLimit()
                     << " should be larger than the normal transaction gas ("
                     << NORMAL_TRAN_GAS << ")");
+    error_code = PoolTxnStatus::INSUFFICIENT_GAS_LIMIT;
     return false;
   }
 
@@ -82,6 +86,7 @@ bool AccountStoreBase<MAP>::UpdateAccounts(const Transaction& transaction,
     LOG_GENERAL(
         WARNING,
         "transaction.GetGasLimit() * transaction.GetGasPrice() overflow!");
+    error_code = PoolTxnStatus::MATH_ERROR;
     return false;
   }
 
@@ -95,10 +100,12 @@ bool AccountStoreBase<MAP>::UpdateAccounts(const Transaction& transaction,
                     << ") "
                        "with amount ("
                     << transaction.GetAmount() << ") in the transaction");
+    error_code = PoolTxnStatus::INSUFFICIENT_BALANCE;
     return false;
   }
 
   if (!DecreaseBalance(fromAddr, gasDeposit)) {
+    error_code = PoolTxnStatus::MATH_ERROR;
     return false;
   }
 
@@ -106,20 +113,24 @@ bool AccountStoreBase<MAP>::UpdateAccounts(const Transaction& transaction,
     if (!IncreaseBalance(fromAddr, gasDeposit)) {
       LOG_GENERAL(FATAL, "IncreaseBalance failed for gasDeposit");
     }
+    error_code = PoolTxnStatus::MATH_ERROR;
     return false;
   }
 
   uint128_t gasRefund;
   if (!CalculateGasRefund(gasDeposit, NORMAL_TRAN_GAS,
                           transaction.GetGasPrice(), gasRefund)) {
+    error_code = PoolTxnStatus::MATH_ERROR;
     return false;
   }
 
   if (!IncreaseBalance(fromAddr, gasRefund)) {
+    error_code = PoolTxnStatus::MATH_ERROR;
     LOG_GENERAL(FATAL, "IncreaseBalance failed for gasRefund");
   }
 
   if (!IncreaseNonce(fromAddr)) {
+    error_code = PoolTxnStatus::MATH_ERROR;
     return false;
   }
 

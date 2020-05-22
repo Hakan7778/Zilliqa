@@ -39,7 +39,8 @@ class Validator {
   static bool VerifyTransaction(const Transaction& tran);
 
   bool CheckCreatedTransaction(const Transaction& tx,
-                               TransactionReceipt& receipt) const;
+                               TransactionReceipt& receipt,
+                               PoolTxnStatus& error_code) const;
 
   bool CheckCreatedTransactionFromLookup(const Transaction& tx);
 
