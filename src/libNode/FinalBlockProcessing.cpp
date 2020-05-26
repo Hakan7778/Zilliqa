@@ -1325,6 +1325,7 @@ bool Node::AddPendingTxn(const HashCodeMap& pendingTxns, const PubKey& pubkey,
     if (!IsPoolTxnDropped(entry.second)) {
       m_unconfirmedTxns.emplace(entry);
     } else {
+      LOG_GENERAL(INFO, "[DTXN]" << entry.first << " " << currentEpochNum);
       m_droppedTxns.insert(entry.first, entry.second, currentEpochNum);
     }
   }

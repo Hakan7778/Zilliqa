@@ -3138,16 +3138,16 @@ void Lookup::CommitTxBlocks(const vector<TxBlock>& txBlocks) {
       // Compose And Send GetCosigRewards for this txBlk from seed
       ComposeAndSendGetCosigsRewardsFromSeed(txBlock.GetHeader().GetBlockNum());
     }
+
+    if (LOOKUP_NODE_MODE) {
+      m_mediator.m_node->ClearUnconfirmedTxn();
+    }
   }
 
   m_mediator.m_currentEpochNum =
       m_mediator.m_txBlockChain.GetLastBlock().GetHeader().GetBlockNum();
   // To trigger m_isVacuousEpoch calculation
   m_mediator.IncreaseEpochNum();
-
-  if (LOOKUP_NODE_MODE) {
-    m_mediator.m_node->ClearUnconfirmedTxn();
-  }
 
   if ((LOOKUP_NODE_MODE && ARCHIVAL_LOOKUP &&
        m_syncType == SyncType::NEW_LOOKUP_SYNC) ||

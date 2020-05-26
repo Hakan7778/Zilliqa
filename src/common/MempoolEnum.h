@@ -54,27 +54,9 @@ class DroppedTxnContainer {
 
  public:
   bool insert(const TxnHash& txhash, const PoolTxnStatus status,
-              const uint64_t& epochNum) {
-    m_txnHashExpiration[epochNum].emplace_back(txhash);
-    return m_txnCode.emplace(txhash, status).second;
-  }
-
-  void clear(const uint64_t& epochNum, const uint& TTL) {
-    if (TTL > epochNum) {
-      return;
-    }
-    const auto& oldEpoch = epochNum - TTL;
-
-    if (m_txnHashExpiration.find(oldEpoch) != m_txnHashExpiration.end()) {
-      for (const auto& txhash : m_txnHashExpiration[oldEpoch]) {
-        m_txnCode.erase(txhash);
-      }
-
-      m_txnHashExpiration.erase(oldEpoch);
-    }
-  }
-
-  const HashCodeMap& GetHashCodeMap() const { return m_txnCode; }
+              const uint64_t& epochNum);
+  void clear(const uint64_t& epochNum, const uint& TTL);
+  const HashCodeMap& GetHashCodeMap() const;
 };
 
 enum PendingData { HASH_CODE_MAP, PUBKEY, SHARD_ID };
