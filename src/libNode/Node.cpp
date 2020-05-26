@@ -560,7 +560,6 @@ void Node::ClearUnconfirmedTxn() {
   {
     const auto& currentEpochNum =
         m_mediator.m_txBlockChain.GetLastBlock().GetHeader().GetBlockNum();
-    lock(m_unconfirmedTxnsMutex, m_droppedTxnsMutex);
     unique_lock<shared_timed_mutex> g(m_droppedTxnsMutex);
     m_droppedTxns.clear(currentEpochNum, 5);
   }
