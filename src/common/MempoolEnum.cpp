@@ -21,7 +21,7 @@
 bool DroppedTxnContainer::insert(const TxnHash& txhash,
                                  const PoolTxnStatus status,
                                  const uint64_t& epochNum) {
-  m_txnHashExpiration[epochNum].emplace_back(txhash);
+  m_txnHashExpiration[epochNum].emplace(txhash);
   LOG_GENERAL(INFO, "[DTXN]"
                         << "Inserted " << txhash << " at " << epochNum);
   return m_txnCode.emplace(txhash, status).second;

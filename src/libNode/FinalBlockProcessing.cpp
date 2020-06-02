@@ -991,10 +991,6 @@ bool Node::ProcessFinalBlockCore(uint64_t& dsBlockNumber,
   m_mediator.UpdateDSBlockRand();
   m_mediator.UpdateTxBlockRand();
 
-  if (LOOKUP_NODE_MODE) {
-    ClearUnconfirmedTxn();
-  }
-
   LOG_GENERAL(INFO, "toSendPendingTxn " << toSendPendingTxn);
 
   if (!LOOKUP_NODE_MODE) {
@@ -1004,7 +1000,7 @@ bool Node::ProcessFinalBlockCore(uint64_t& dsBlockNumber,
     if (toSendPendingTxn) {
       SendPendingTxnToLookup();
     }
-
+    ClearUnconfirmedTxn();
     if (isVacuousEpoch) {
       InitiatePoW();
     } else {
@@ -1018,7 +1014,7 @@ bool Node::ProcessFinalBlockCore(uint64_t& dsBlockNumber,
       m_consensusLeaderID++;
       m_consensusLeaderID = m_consensusLeaderID % m_mediator.GetShardSize(true);
     }
-
+    ClearPendingAndDroppedTxn();
     // Now only forwarded txn are left, so only call in lookup
 
     uint32_t numShards = m_mediator.m_ds->GetNumShards();
@@ -1323,7 +1319,7 @@ bool Node::AddPendingTxn(const HashCodeMap& pendingTxns, const PubKey& pubkey,
     }
 
     if (!IsPoolTxnDropped(entry.second)) {
-      m_unconfirmedTxns.emplace(entry);
+      m_pendingTxns.insert(entry.first, entry.second, currentEpochNum);
     } else {
       LOG_GENERAL(INFO, "[DTXN]" << entry.first << " " << currentEpochNum);
       m_droppedTxns.insert(entry.first, entry.second, currentEpochNum);

@@ -1752,8 +1752,8 @@ Json::Value LookupServer::GetPendingTxns() {
                            "Not to be queried on non-lookup");
   }
   Json::Value _json;
+  _json["Txns"] = Json::Value(Json::arrayValue);
   auto putTxns = [&_json](const HashCodeMap& t_hashCodeMap) -> void {
-    _json["Txns"] = Json::Value(Json::arrayValue);
     for (const auto& txhash_and_status : t_hashCodeMap) {
       Json::Value tmpJson;
       tmpJson["TxnHash"] = txhash_and_status.first.hex();
@@ -1763,7 +1763,7 @@ Json::Value LookupServer::GetPendingTxns() {
   };
 
   try {
-    putTxns(m_mediator.m_node->GetUnconfirmedTxns());
+    putTxns(m_mediator.m_node->GetPendingTxns());
     putTxns(m_mediator.m_node->GetDroppedTxns());
     return _json;
   } catch (const JsonRpcException& je) {

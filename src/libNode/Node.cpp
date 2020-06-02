@@ -553,15 +553,23 @@ bool Node::CheckIntegrity(bool fromIsolatedBinary) {
 }
 
 void Node::ClearUnconfirmedTxn() {
+  LOG_MARKER();
   {
     unique_lock<shared_timed_mutex> g(m_unconfirmedTxnsMutex);
     m_unconfirmedTxns.clear();
   }
+}
+
+void Node::ClearPendingAndDroppedTxn() {
+  const auto& currentEpochNum =
+      m_mediator.m_txBlockChain.GetLastBlock().GetHeader().GetBlockNum();
   {
-    const auto& currentEpochNum =
-        m_mediator.m_txBlockChain.GetLastBlock().GetHeader().GetBlockNum();
     unique_lock<shared_timed_mutex> g(m_droppedTxnsMutex);
-    m_droppedTxns.clear(currentEpochNum, 5);
+    m_droppedTxns.clear(currentEpochNum, NUM_TTL_DROPPED_TXN);
+  }
+  {
+    unique_lock<shared_timed_mutex> g(m_pendingTxnsMutex);
+    m_pendingTxns.clear(currentEpochNum, NUM_TTL_PENDING_TXN);
   }
 }
 
@@ -1835,10 +1843,15 @@ bool Node::ProcessTxnPacketFromLookupCore(const bytes& message,
       LOG_GENERAL(WARNING, "Already in vacuous epoch, stop proc txn");
       return false;
     }
-    if (m_mediator.m_validator->CheckCreatedTransactionFromLookup(txn)) {
+    PoolTxnStatus error;
+    if (m_mediator.m_validator->CheckCreatedTransactionFromLookup(txn, error)) {
       checkedTxns.push_back(txn);
     } else {
       LOG_GENERAL(WARNING, "Txn " << txn.GetTranID().hex() << " is not valid.");
+      {
+        unique_lock<shared_timed_mutex> g(m_unconfirmedTxnsMutex);
+        m_unconfirmedTxns.emplace(txn.GetTranID(), error);
+      }
     }
 
     processed_count++;
@@ -1855,7 +1868,13 @@ bool Node::ProcessTxnPacketFromLookupCore(const bytes& message,
 
     for (const auto& txn : checkedTxns) {
       LOG_GENERAL(INFO, "Txn " << txn.GetTranID().hex() << " added to pool");
-      m_createdTxns.insert(txn);
+      if (!m_createdTxns.insert(txn)) {
+        {
+          unique_lock<shared_timed_mutex> g(m_unconfirmedTxnsMutex);
+          m_unconfirmedTxns.emplace(txn.GetTranID(),
+                                    PoolTxnStatus::MEMPOOL_REJECT);
+        }
+      }
     }
 
     LOG_GENERAL(INFO, "Txn processed: " << processed_count

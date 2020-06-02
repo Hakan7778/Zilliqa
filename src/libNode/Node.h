@@ -142,10 +142,13 @@ class Node : public Executable {
   // std::unordered_map<uint64_t, std::list<TransactionWithReceipt>>
   //     m_committedTransactions;
   std::shared_timed_mutex mutable m_unconfirmedTxnsMutex;
-  std::unordered_map<TxnHash, PoolTxnStatus> m_unconfirmedTxns;
+  HashCodeMap m_unconfirmedTxns;
 
   std::shared_timed_mutex mutable m_droppedTxnsMutex;
   DroppedTxnContainer m_droppedTxns;
+
+  std::shared_timed_mutex mutable m_pendingTxnsMutex;
+  DroppedTxnContainer m_pendingTxns;
 
   std::mutex m_mutexMBnForwardedTxnBuffer;
   std::unordered_map<uint64_t, std::vector<MBnForwardedTxnEntry>>
@@ -677,6 +680,8 @@ class Node : public Executable {
 
   std::unordered_map<TxnHash, PoolTxnStatus> GetDroppedTxns() const;
 
+  std::unordered_map<TxnHash, PoolTxnStatus> GetPendingTxns() const;
+
   uint32_t CalculateShardLeaderFromDequeOfNode(uint16_t lastBlockHash,
                                                uint32_t sizeOfShard,
                                                const DequeOfNode& shardMembers);
@@ -707,6 +712,8 @@ class Node : public Executable {
   void CleanWhitelistReqs();
 
   void ClearUnconfirmedTxn();
+
+  void ClearPendingAndDroppedTxn();
 
   bool IsUnconfirmedTxnEmpty() const;
 

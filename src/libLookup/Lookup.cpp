@@ -3140,7 +3140,7 @@ void Lookup::CommitTxBlocks(const vector<TxBlock>& txBlocks) {
     }
 
     if (LOOKUP_NODE_MODE) {
-      m_mediator.m_node->ClearUnconfirmedTxn();
+      m_mediator.m_node->ClearPendingAndDroppedTxn();
     }
   }
 

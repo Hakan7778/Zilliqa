@@ -42,7 +42,8 @@ class Validator {
                                TransactionReceipt& receipt,
                                PoolTxnStatus& error_code) const;
 
-  bool CheckCreatedTransactionFromLookup(const Transaction& tx);
+  bool CheckCreatedTransactionFromLookup(const Transaction& tx,
+                                         PoolTxnStatus& error_code);
 
   template <class Container, class DirectoryBlock>
   bool CheckBlockCosignature(const DirectoryBlock& block,

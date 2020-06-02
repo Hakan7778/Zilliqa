@@ -90,6 +90,10 @@ struct TxnPool {
         HashIndex[t.GetTranID()] = t;
         GasIndex[t.GetGasPrice()][t.GetTranID()] = t;
         searchNonce->second = t;
+      } else {
+        // GasPrice is higher but of same nonce
+        // or same gas price and nonce but higher tranID
+        return false;
       }
     } else {
       HashIndex[t.GetTranID()] = t;

@@ -456,7 +456,6 @@ void Node::ProcessTransactionWhenShardLeader(
   if (ENABLE_TXNS_BACKUP) {
     SaveTxnsToS3(t_processedTransactions);
   }
-  
 
   if (LOG_PARAMETERS) {
     double elaspedTimeMs =
@@ -718,8 +717,6 @@ void Node::ProcessTransactionWhenShardBackup(
 
   PutTxnsInTempDataBase(t_processedTransactions);
 
-  ReinstateMemPool(t_addrNonceTxnMap, gasLimitExceededTxnBuffer);
-
   if (LOG_PARAMETERS) {
     double elaspedTimeMs =
         std::chrono::duration<double, std::milli>(
@@ -848,20 +845,32 @@ PoolTxnStatus Node::IsTxnInMemPool(const TxnHash& txhash) const {
     return PoolTxnStatus::NOT_PRESENT;
   };
 
-  const auto& unconfirmStatus =
-      findTxnHashStatus(m_unconfirmedTxnsMutex, m_unconfirmedTxns);
+  if (LOOKUP_NODE_MODE) {
+    const auto& unconfirmStatus =
+        findTxnHashStatus(m_pendingTxnsMutex, m_pendingTxns.GetHashCodeMap());
 
-  if (LOOKUP_NODE_MODE && (unconfirmStatus != PoolTxnStatus::NOT_PRESENT)) {
-    return findTxnHashStatus(m_droppedTxnsMutex,
-                             m_droppedTxns.GetHashCodeMap());
+    if ((unconfirmStatus != PoolTxnStatus::NOT_PRESENT)) {
+      return findTxnHashStatus(m_droppedTxnsMutex,
+                               m_droppedTxns.GetHashCodeMap());
+    }
+    return unconfirmStatus;
+  } else {
+    const auto& unconfirmStatus =
+        findTxnHashStatus(m_unconfirmedTxnsMutex, m_unconfirmedTxns);
+
+    return unconfirmStatus;
   }
-  return unconfirmStatus;
 }
 
 unordered_map<TxnHash, PoolTxnStatus> Node::GetUnconfirmedTxns() const {
   shared_lock<shared_timed_mutex> g(m_unconfirmedTxnsMutex);
 
   return m_unconfirmedTxns;
+}
+
+HashCodeMap Node::GetPendingTxns() const {
+  shared_lock<shared_timed_mutex> g(m_pendingTxnsMutex);
+  return m_pendingTxns.GetHashCodeMap();
 }
 
 HashCodeMap Node::GetDroppedTxns() const {
