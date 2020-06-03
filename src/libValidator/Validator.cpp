@@ -179,7 +179,7 @@ bool Validator::CheckCreatedTransactionFromLookup(const Transaction& tx,
                                    << correct_shard_to
                                    << " is different for the call SC txn");
         // Already checked at lookup
-        error_code = PoolTxnStatus::CHAIN_CALL_WRONG_SHARD;
+        error_code = PoolTxnStatus::CONTRACT_CALL_WRONG_SHARD;
         return false;
       }
     }
@@ -190,6 +190,7 @@ bool Validator::CheckCreatedTransactionFromLookup(const Transaction& tx,
               "Code size " << tx.GetCode().size()
                            << " larger than maximum code size allowed "
                            << MAX_CODE_SIZE_IN_BYTES);
+    // Already checked at lookup
     error_code = PoolTxnStatus::HIGH_BYTE_SIZE_CODE;
     return false;
   }
