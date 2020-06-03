@@ -715,6 +715,8 @@ class Node : public Executable {
 
   void ClearPendingAndDroppedTxn();
 
+  void ClearAllPendingAndDroppedTxn();
+
   bool IsUnconfirmedTxnEmpty() const;
 
   void RemoveIpMapping();

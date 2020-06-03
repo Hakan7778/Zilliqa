@@ -41,7 +41,7 @@ enum PoolTxnStatus : uint8_t {
   INCORRECT_TXN_TYPE = 20,
   HIGH_GAS_LIMIT = 21,
   INCORRECT_SHARD = 22,
-  CHAIN_CALL_NOT_DS = 23,
+  CHAIN_CALL_WRONG_SHARD = 23,
   HIGH_BYTE_SIZE_CODE = 24,
   MEMPOOL_REJECT = 25
 };
@@ -62,6 +62,7 @@ class DroppedTxnContainer {
               const uint64_t& epochNum);
   void clear(const uint64_t& epochNum, const uint& TTL);
   const HashCodeMap& GetHashCodeMap() const;
+  void clearAll();
 };
 
 enum PendingData { HASH_CODE_MAP, PUBKEY, SHARD_ID };

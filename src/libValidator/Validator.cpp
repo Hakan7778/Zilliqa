@@ -143,6 +143,7 @@ bool Validator::CheckCreatedTransactionFromLookup(const Transaction& tx,
            ? SHARD_MICROBLOCK_GAS_LIMIT
            : DS_MICROBLOCK_GAS_LIMIT)) {
     error_code = PoolTxnStatus::HIGH_GAS_LIMIT;
+    // Already should be checked at lookup
     LOG_GENERAL(WARNING, "Txn gas limit too high");
     return false;
   }
@@ -177,7 +178,8 @@ bool Validator::CheckCreatedTransactionFromLookup(const Transaction& tx,
                   "The fromShard " << correct_shard_from << " and toShard "
                                    << correct_shard_to
                                    << " is different for the call SC txn");
-        error_code = PoolTxnStatus::CHAIN_CALL_NOT_DS;
+        // Already checked at lookup
+        error_code = PoolTxnStatus::CHAIN_CALL_WRONG_SHARD;
         return false;
       }
     }

@@ -418,6 +418,10 @@ bool Lookup::GenTxnToSend(size_t num_txn,
   const vector<Address>& myGenesisAccounts = m_mediator.m_currentEpochNum % 2
                                                  ? m_myGenesisAccounts1
                                                  : m_myGenesisAccounts2;
+
+  if (myGenesisAccounts.empty()) {
+    return false;
+  }
   const unsigned int NUM_TXN_TO_DS_PER_ACCOUNT =
       num_txn / myGenesisAccounts.size();
 
@@ -4783,6 +4787,7 @@ bool Lookup::CleanVariables() {
     l_nodesInNetwork.clear();
   }
   m_mediator.m_node->CleanWhitelistReqs();
+  m_mediator.m_node->ClearAllPendingAndDroppedTxn();
 
   return true;
 }

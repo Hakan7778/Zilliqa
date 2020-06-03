@@ -49,6 +49,11 @@ void DroppedTxnContainer::clear(const uint64_t& epochNum, const uint& TTL) {
   }
 }
 
+void DroppedTxnContainer::clearAll() {
+  m_txnCode.clear();
+  m_txnHashExpiration.clear();
+}
+
 const HashCodeMap& DroppedTxnContainer::GetHashCodeMap() const {
   return m_txnCode;
 }

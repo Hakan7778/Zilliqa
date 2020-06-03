@@ -573,6 +573,17 @@ void Node::ClearPendingAndDroppedTxn() {
   }
 }
 
+void Node::ClearAllPendingAndDroppedTxn() {
+  {
+    unique_lock<shared_timed_mutex> g(m_droppedTxnsMutex);
+    m_droppedTxns.clearAll();
+  }
+  {
+    unique_lock<shared_timed_mutex> g(m_pendingTxnsMutex);
+    m_pendingTxns.clearAll();
+  }
+}
+
 bool Node::ValidateDB() {
   const string lookupIp = "127.0.0.1";
   const unsigned int port = SEED_PORT;

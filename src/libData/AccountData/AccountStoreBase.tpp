@@ -174,7 +174,9 @@ bool AccountStoreBase<MAP>::AddAccount(const Address& address,
 
   if (!IsAccountExist(address)) {
     m_addressToAccount->insert(std::make_pair(address, account));
-    // UpdateStateTrie(address, account);
+    LOG_GENERAL(WARNING, "Address "
+                             << address
+                             << " could not be added because already present");
     return true;
   }
   return false;
