@@ -248,7 +248,12 @@ bool AccountStoreBase<MAP>::DecreaseBalance(const Address& address,
     return false;
   }
 
-  return account->DecreaseBalance(delta);
+  if (!account->DecreaseBalance(delta)) {
+    LOG_GENERAL(WARNING, "Failed to decrease " << delta << " for account "
+                                               << address.hex());
+    return false;
+  }
+  return true;
 }
 
 template <class MAP>

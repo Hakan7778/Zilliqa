@@ -1872,25 +1872,35 @@ bool Node::ProcessTxnPacketFromLookupCore(const bytes& message,
     }
   }
 
+  vector<TxnHash> mempoolReject;
+
   {
     lock_guard<mutex> g(m_mutexCreatedTransactions);
     LOG_GENERAL(INFO,
                 "TxnPool size before processing: " << m_createdTxns.size());
 
     for (const auto& txn : checkedTxns) {
-      LOG_GENERAL(INFO, "Txn " << txn.GetTranID().hex() << " added to pool");
       if (!m_createdTxns.insert(txn)) {
         {
-          unique_lock<shared_timed_mutex> g(m_unconfirmedTxnsMutex);
-          m_unconfirmedTxns.emplace(txn.GetTranID(),
-                                    PoolTxnStatus::MEMPOOL_REJECT);
+          mempoolReject.emplace_back(txn.GetTranID());
+          LOG_GENERAL(INFO,
+                      "Txn " << txn.GetTranID().hex() << " rejected by pool");
         }
+      } else {
+        LOG_GENERAL(INFO, "Txn " << txn.GetTranID().hex() << " added to pool");
       }
     }
 
     LOG_GENERAL(INFO, "Txn processed: " << processed_count
                                         << " TxnPool size after processing: "
                                         << m_createdTxns.size());
+  }
+
+  {
+    unique_lock<shared_timed_mutex> g(m_unconfirmedTxnsMutex);
+    for (const auto& txnhash : mempoolReject) {
+      m_unconfirmedTxns.emplace(txnhash, PoolTxnStatus::MEMPOOL_REJECT);
+    }
   }
 
   if (LOG_PARAMETERS) {
