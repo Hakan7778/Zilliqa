@@ -27,17 +27,15 @@ using namespace boost::multiprecision;
 
 BOOST_AUTO_TEST_SUITE(peer_test)
 
-BOOST_AUTO_TEST_CASE(test_print_ip_numerical_to_String)
-{
-    Peer p((boost::multiprecision::uint128_t)16777343, 0);
-    std::string result = p.GetPrintableIPAddress();
-    BOOST_CHECK_MESSAGE(result == "127.0.0.1",
-                        "Expected: 127.0.0.1 , Result: " + result);
-    Peer p1;
-    result = p1.GetPrintableIPAddress();
-    BOOST_CHECK_MESSAGE(result == "0.0.0.0",
-                        "Expected: 0.0.0.0 , Result: " + result);
-
+BOOST_AUTO_TEST_CASE(test_print_ip_numerical_to_String) {
+  Peer p((boost::multiprecision::uint128_t)16777343, 0);
+  std::string result = p.GetPrintableIPAddress();
+  BOOST_CHECK_MESSAGE(result == "127.0.0.1",
+                      "Expected: 127.0.0.1 , Result: " + result);
+  Peer p1;
+  result = p1.GetPrintableIPAddress();
+  BOOST_CHECK_MESSAGE(result == "0.0.0.0",
+                      "Expected: 0.0.0.0 , Result: " + result);
 }
 
-BOOST_AUTO_TEST_SUITE_END() 
+BOOST_AUTO_TEST_SUITE_END()
