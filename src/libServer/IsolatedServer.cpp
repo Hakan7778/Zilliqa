@@ -242,7 +242,7 @@ Json::Value IsolatedServer::CreateTransaction(const Json::Value& _json) {
 
     TransactionReceipt txreceipt;
 
-    PoolTxnStatus error_code;
+    ErrTxnStatus error_code;
     bool throwError = false;
     txreceipt.SetEpochNum(m_blocknum);
     if (!AccountStore::GetInstance().UpdateAccountsTemp(m_blocknum,

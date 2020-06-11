@@ -1304,9 +1304,9 @@ bool Node::AddPendingTxn(const HashCodeMap& pendingTxns, const PubKey& pubkey,
   const auto& currentEpochNum =
       m_mediator.m_txBlockChain.GetLastBlock().GetHeader().GetBlockNum();
 
-  lock(m_unconfirmedTxnsMutex, m_droppedTxnsMutex);
+  lock(m_pendingTxnsMutex, m_droppedTxnsMutex);
 
-  unique_lock<shared_timed_mutex> g1(m_unconfirmedTxnsMutex, adopt_lock);
+  unique_lock<shared_timed_mutex> g1(m_pendingTxnsMutex, adopt_lock);
   unique_lock<shared_timed_mutex> g2(m_droppedTxnsMutex, adopt_lock);
   for (const auto& entry : pendingTxns) {
     LOG_GENERAL(INFO, " " << entry.first << " " << entry.second);
@@ -1318,7 +1318,7 @@ bool Node::AddPendingTxn(const HashCodeMap& pendingTxns, const PubKey& pubkey,
       continue;
     }
 
-    if (!IsPoolTxnDropped(entry.second)) {
+    if (!IsTxnDropped(entry.second)) {
       m_pendingTxns.insert(entry.first, entry.second, currentEpochNum);
     } else {
       LOG_GENERAL(INFO, "[DTXN]" << entry.first << " " << currentEpochNum);
@@ -1364,7 +1364,7 @@ bool Node::ProcessPendingTxn(const bytes& message, unsigned int cur_offset,
     return false;
   }
   uint64_t epochNum;
-  unordered_map<TxnHash, PoolTxnStatus> hashCodeMap;
+  unordered_map<TxnHash, ErrTxnStatus> hashCodeMap;
   uint32_t shardId;
   PubKey pubkey;
 

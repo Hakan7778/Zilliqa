@@ -1708,34 +1708,30 @@ Json::Value LookupServer::GetPendingTxn(const string& tranID) {
     if (BlockStorage::GetBlockStorage().CheckTxBody(tranHash)) {
       // Transaction already present in database means confirmed
       _json["confirmed"] = true;
-      _json["code"] = PoolTxnStatus::NOT_PRESENT;
-      _json["info"] = "Txn already processed and confirmed";
+      _json["code"] = ErrTxnStatus::NOT_PRESENT;
       return _json;
     }
 
     const auto& code = m_mediator.m_node->IsTxnInMemPool(tranHash);
 
-    if (!IsPoolTxnDropped(code)) {
+    if (!IsTxnDropped(code)) {
       switch (code) {
-        case PoolTxnStatus::NOT_PRESENT:
+        case ErrTxnStatus::NOT_PRESENT:
           _json["confirmed"] = false;
           _json["pending"] = false;
-          _json["code"] = PoolTxnStatus::NOT_PRESENT;
-          _json["info"] = "Txn not pending";
+          _json["code"] = ErrTxnStatus::NOT_PRESENT;
           return _json;
-        case PoolTxnStatus::PRESENT_NONCE_HIGH:
+        case ErrTxnStatus::PRESENT_NONCE_HIGH:
           _json["confirmed"] = false;
           _json["pending"] = true;
-          _json["code"] = PoolTxnStatus::PRESENT_NONCE_HIGH;
-          _json["info"] = "Nonce too high";
+          _json["code"] = ErrTxnStatus::PRESENT_NONCE_HIGH;
           return _json;
-        case PoolTxnStatus::PRESENT_GAS_EXCEEDED:
+        case ErrTxnStatus::PRESENT_GAS_EXCEEDED:
           _json["confirmed"] = false;
           _json["pending"] = true;
-          _json["code"] = PoolTxnStatus::PRESENT_GAS_EXCEEDED;
-          _json["info"] = "Could not fit in as microblock gas limit reached";
+          _json["code"] = ErrTxnStatus::PRESENT_GAS_EXCEEDED;
           return _json;
-        case PoolTxnStatus::ERROR:
+        case ErrTxnStatus::ERROR:
           throw JsonRpcException(RPC_INTERNAL_ERROR, "Processing transactions");
         default:
           throw JsonRpcException(RPC_MISC_ERROR, "Unable to process");

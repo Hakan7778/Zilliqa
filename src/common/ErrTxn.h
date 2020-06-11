@@ -15,14 +15,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef ZILLIQA_SRC_COMMON_MEMPOOLENUM_H_
-#define ZILLIQA_SRC_COMMON_MEMPOOLENUM_H_
+#ifndef ZILLIQA_SRC_COMMON_ERRTXN_H_
+#define ZILLIQA_SRC_COMMON_ERRTXN_H_
 
 #include "depends/common/FixedHash.h"
 
 using TxnHash = dev::h256;
 
-enum PoolTxnStatus : uint8_t {
+enum ErrTxnStatus : uint8_t {
   // PendingTxns
   NOT_PRESENT = 0,
   PRESENT_NONCE_HIGH = 1,
@@ -50,25 +50,25 @@ enum PoolTxnStatus : uint8_t {
   ERROR = 4  // MISC_ERROR
 };
 
-inline bool IsPoolTxnDropped(PoolTxnStatus code) {
+inline bool IsTxnDropped(ErrTxnStatus code) {
   return (static_cast<uint8_t>(code) >= 10);
 }
 
-using HashCodeMap = std::unordered_map<TxnHash, PoolTxnStatus>;
+using HashCodeMap = std::unordered_map<TxnHash, ErrTxnStatus>;
 
-class DroppedTxnContainer {
+class TTLTxns {
  private:
   std::unordered_map<uint64_t, std::unordered_set<TxnHash>> m_txnHashExpiration;
   HashCodeMap m_txnCode;
 
  public:
-  bool insert(const TxnHash& txhash, const PoolTxnStatus status,
+  bool insert(const TxnHash& txhash, const ErrTxnStatus status,
               const uint64_t& epochNum);
-  void clear(const uint64_t& epochNum, const uint& TTL);
+  void clear(const uint64_t& epochNum, const unsigned int& TTL);
   const HashCodeMap& GetHashCodeMap() const;
   void clearAll();
 };
 
 enum PendingData { HASH_CODE_MAP, PUBKEY, SHARD_ID };
 
-#endif  // ZILLIQA_SRC_COMMON_MEMPOOLENUM_H_
+#endif  // ZILLIQA_SRC_COMMON_ERRTXN_H_

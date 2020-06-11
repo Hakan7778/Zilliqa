@@ -153,7 +153,7 @@ class AccountStore
                           const unsigned int& numShards, const bool& isDS,
                           const Transaction& transaction,
                           TransactionReceipt& receipt,
-                          PoolTxnStatus& error_code);
+                          ErrTxnStatus& error_code);
 
   /// add account in AccountStoreTemp
   void AddAccountTemp(const Address& address, const Account& account) {

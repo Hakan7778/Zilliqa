@@ -15,19 +15,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "MempoolEnum.h"
+#include "ErrTxn.h"
 #include "libUtils/Logger.h"
 
-bool DroppedTxnContainer::insert(const TxnHash& txhash,
-                                 const PoolTxnStatus status,
-                                 const uint64_t& epochNum) {
+bool TTLTxns ::insert(const TxnHash& txhash, const ErrTxnStatus status,
+                      const uint64_t& epochNum) {
   m_txnHashExpiration[epochNum].emplace(txhash);
   LOG_GENERAL(INFO, "[DTXN]"
                         << "Inserted " << txhash << " at " << epochNum);
   return m_txnCode.emplace(txhash, status).second;
 }
 
-void DroppedTxnContainer::clear(const uint64_t& epochNum, const uint& TTL) {
+void TTLTxns ::clear(const uint64_t& epochNum, const uint& TTL) {
   LOG_MARKER();
   if (TTL > epochNum) {
     return;
@@ -49,11 +48,9 @@ void DroppedTxnContainer::clear(const uint64_t& epochNum, const uint& TTL) {
   }
 }
 
-void DroppedTxnContainer::clearAll() {
+void TTLTxns ::clearAll() {
   m_txnCode.clear();
   m_txnHashExpiration.clear();
 }
 
-const HashCodeMap& DroppedTxnContainer::GetHashCodeMap() const {
-  return m_txnCode;
-}
+const HashCodeMap& TTLTxns ::GetHashCodeMap() const { return m_txnCode; }

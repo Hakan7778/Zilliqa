@@ -91,7 +91,7 @@ bool AccountStoreSC<MAP>::UpdateAccounts(const uint64_t& blockNum,
                                          const bool& isDS,
                                          const Transaction& transaction,
                                          TransactionReceipt& receipt,
-                                         PoolTxnStatus& error_code) {
+                                         ErrTxnStatus& error_code) {
   // LOG_MARKER();
   LOG_GENERAL(INFO, "Process txn: " << transaction.GetTranID());
   std::lock_guard<std::mutex> g(m_mutexUpdateAccounts);
@@ -99,7 +99,7 @@ bool AccountStoreSC<MAP>::UpdateAccounts(const uint64_t& blockNum,
   m_curIsDS = isDS;
   m_txnProcessTimeout = false;
 
-  error_code = PoolTxnStatus::NOT_PRESENT;
+  error_code = ErrTxnStatus::NOT_PRESENT;
 
   const PubKey& senderPubKey = transaction.GetSenderPubKey();
   const Address fromAddr = Account::GetAddressFromPublicKey(senderPubKey);
@@ -114,7 +114,7 @@ bool AccountStoreSC<MAP>::UpdateAccounts(const uint64_t& blockNum,
   uint128_t gasDeposit;
   if (!SafeMath<uint128_t>::mul(gasRemained, transaction.GetGasPrice(),
                                 gasDeposit)) {
-    error_code = PoolTxnStatus::MATH_ERROR;
+    error_code = ErrTxnStatus::MATH_ERROR;
     return false;
   }
 
@@ -127,7 +127,7 @@ bool AccountStoreSC<MAP>::UpdateAccounts(const uint64_t& blockNum,
       if (toAccount != nullptr) {
         if (toAccount->isContract()) {
           LOG_GENERAL(WARNING, "Contract account won't accept normal txn");
-          error_code = PoolTxnStatus::INVALID_TO_ACCOUNT;
+          error_code = ErrTxnStatus::INVALID_TO_ACCOUNT;
           return false;
         }
       }
@@ -143,7 +143,7 @@ bool AccountStoreSC<MAP>::UpdateAccounts(const uint64_t& blockNum,
       Account* fromAccount = this->GetAccount(fromAddr);
       if (fromAccount == nullptr) {
         LOG_GENERAL(WARNING, "Sender has no balance, reject");
-        error_code = PoolTxnStatus::INVALID_FROM_ACCOUNT;
+        error_code = ErrTxnStatus::INVALID_FROM_ACCOUNT;
         return false;
       }
 
@@ -155,7 +155,7 @@ bool AccountStoreSC<MAP>::UpdateAccounts(const uint64_t& blockNum,
       if (transaction.GetGasLimit() < createGasPenalty) {
         LOG_GENERAL(WARNING, "Gas limit " << transaction.GetGasLimit()
                                           << " less than " << createGasPenalty);
-        error_code = PoolTxnStatus::INSUFFICIENT_GAS_LIMIT;
+        error_code = ErrTxnStatus::INSUFFICIENT_GAS_LIMIT;
         return false;
       }
 
@@ -163,7 +163,7 @@ bool AccountStoreSC<MAP>::UpdateAccounts(const uint64_t& blockNum,
       if (fromAccount->GetBalance() < gasDeposit) {
         LOG_GENERAL(WARNING,
                     "The account doesn't have enough gas to create a contract");
-        error_code = PoolTxnStatus::INSUFFICIENT_BALANCE;
+        error_code = ErrTxnStatus::INSUFFICIENT_BALANCE;
         return false;
       }
       // Check if the sender has enough balance to pay gasDeposit and transfer
@@ -188,7 +188,7 @@ bool AccountStoreSC<MAP>::UpdateAccounts(const uint64_t& blockNum,
       // deduct scilla checker invoke gas
       if (gasRemained < SCILLA_CHECKER_INVOKE_GAS) {
         LOG_GENERAL(WARNING, "Not enough gas to invoke the scilla checker");
-        error_code = PoolTxnStatus::INSUFFICIENT_GAS;
+        error_code = ErrTxnStatus::INSUFFICIENT_GAS;
         return false;
       } else {
         gasRemained -= SCILLA_CHECKER_INVOKE_GAS;
@@ -201,13 +201,13 @@ bool AccountStoreSC<MAP>::UpdateAccounts(const uint64_t& blockNum,
       if (!this->AddAccount(toAddr, {0, 0})) {
         LOG_GENERAL(WARNING,
                     "AddAccount failed for contract address " << toAddr.hex());
-        error_code = PoolTxnStatus::FAIL_CONTRACT_ACCOUNT_CREATION;
+        error_code = ErrTxnStatus::FAIL_CONTRACT_ACCOUNT_CREATION;
         return false;
       }
       Account* toAccount = this->GetAccount(toAddr);
       if (toAccount == nullptr) {
         LOG_GENERAL(WARNING, "toAccount is null ptr");
-        error_code = PoolTxnStatus::FAIL_CONTRACT_ACCOUNT_CREATION;
+        error_code = ErrTxnStatus::FAIL_CONTRACT_ACCOUNT_CREATION;
         return false;
       }
 
@@ -230,19 +230,19 @@ bool AccountStoreSC<MAP>::UpdateAccounts(const uint64_t& blockNum,
         if (!toAccount->GetContractAuxiliaries(is_library, scilla_version,
                                                extlibs)) {
           LOG_GENERAL(WARNING, "GetContractAuxiliaries failed");
-          error_code = PoolTxnStatus::FAIL_SCILLA_LIB;
+          error_code = ErrTxnStatus::FAIL_SCILLA_LIB;
           return false;
         }
 
         if (DISABLE_SCILLA_LIB && is_library) {
           LOG_GENERAL(WARNING, "ScillaLib disabled");
-          error_code = PoolTxnStatus::FAIL_SCILLA_LIB;
+          error_code = ErrTxnStatus::FAIL_SCILLA_LIB;
           return false;
         }
 
         if (!PopulateExtlibsExports(scilla_version, extlibs, extlibs_exports)) {
           LOG_GENERAL(WARNING, "PopulateExtLibsExports failed");
-          error_code = PoolTxnStatus::FAIL_SCILLA_LIB;
+          error_code = ErrTxnStatus::FAIL_SCILLA_LIB;
           return false;
         }
 
@@ -265,7 +265,7 @@ bool AccountStoreSC<MAP>::UpdateAccounts(const uint64_t& blockNum,
 
       if (!init) {
         this->RemoveAccount(toAddr);
-        error_code = PoolTxnStatus::FAIL_CONTRACT_INIT;
+        error_code = ErrTxnStatus::FAIL_CONTRACT_INIT;
         return false;
       }
 
@@ -401,7 +401,7 @@ bool AccountStoreSC<MAP>::UpdateAccounts(const uint64_t& blockNum,
       if (!SafeMath<boost::multiprecision::uint128_t>::mul(
               gasRemained, transaction.GetGasPrice(), gasRefund)) {
         this->RemoveAccount(toAddr);
-        error_code = PoolTxnStatus::MATH_ERROR;
+        error_code = ErrTxnStatus::MATH_ERROR;
         return false;
       }
       if (!this->IncreaseBalance(fromAddr, gasRefund)) {
@@ -422,7 +422,7 @@ bool AccountStoreSC<MAP>::UpdateAccounts(const uint64_t& blockNum,
 
         if (!this->IncreaseNonce(fromAddr)) {
           this->RemoveAccount(toAddr);
-          error_code = PoolTxnStatus::MATH_ERROR;
+          error_code = ErrTxnStatus::MATH_ERROR;
           return false;
         }
 
@@ -442,7 +442,7 @@ bool AccountStoreSC<MAP>::UpdateAccounts(const uint64_t& blockNum,
                                  << transaction.GetGasLimit()
                                  << " gasRemained: " << gasRemained
                                  << ". Must be something wrong!");
-        error_code = PoolTxnStatus::MATH_ERROR;
+        error_code = ErrTxnStatus::MATH_ERROR;
         return false;
       }
 
@@ -455,7 +455,7 @@ bool AccountStoreSC<MAP>::UpdateAccounts(const uint64_t& blockNum,
 
           if (!this->IncreaseNonce(fromAddr)) {
             this->RemoveAccount(toAddr);
-            error_code = PoolTxnStatus::MATH_ERROR;
+            error_code = ErrTxnStatus::MATH_ERROR;
             return false;
           }
           return true;
@@ -481,7 +481,7 @@ bool AccountStoreSC<MAP>::UpdateAccounts(const uint64_t& blockNum,
       Account* fromAccount = this->GetAccount(fromAddr);
       if (fromAccount == nullptr) {
         LOG_GENERAL(WARNING, "Sender has no balance, reject");
-        error_code = PoolTxnStatus::INVALID_FROM_ACCOUNT;
+        error_code = ErrTxnStatus::INVALID_FROM_ACCOUNT;
         return false;
       }
 
@@ -493,7 +493,7 @@ bool AccountStoreSC<MAP>::UpdateAccounts(const uint64_t& blockNum,
       if (transaction.GetGasLimit() < callGasPenalty) {
         LOG_GENERAL(WARNING, "Gas limit " << transaction.GetGasLimit()
                                           << " less than " << callGasPenalty);
-        error_code = PoolTxnStatus::INSUFFICIENT_GAS_LIMIT;
+        error_code = ErrTxnStatus::INSUFFICIENT_GAS_LIMIT;
 
         return false;
       }
@@ -510,14 +510,14 @@ bool AccountStoreSC<MAP>::UpdateAccounts(const uint64_t& blockNum,
                                  << amount
                                  << ") in the txn, "
                                     "rejected");
-        error_code = PoolTxnStatus::INSUFFICIENT_BALANCE;
+        error_code = ErrTxnStatus::INSUFFICIENT_BALANCE;
         return false;
       }
 
       // deduct scilla checker invoke gas
       if (gasRemained < SCILLA_RUNNER_INVOKE_GAS) {
         LOG_GENERAL(WARNING, "Not enough gas to invoke the scilla runner");
-        error_code = PoolTxnStatus::INSUFFICIENT_GAS;
+        error_code = ErrTxnStatus::INSUFFICIENT_GAS;
         return false;
       } else {
         gasRemained -= SCILLA_RUNNER_INVOKE_GAS;
@@ -529,7 +529,7 @@ bool AccountStoreSC<MAP>::UpdateAccounts(const uint64_t& blockNum,
       Account* toAccount = this->GetAccount(toAddr);
       if (toAccount == nullptr) {
         LOG_GENERAL(WARNING, "The target contract account doesn't exist");
-        error_code = PoolTxnStatus::INVALID_TO_ACCOUNT;
+        error_code = ErrTxnStatus::INVALID_TO_ACCOUNT;
         return false;
       }
 
@@ -539,26 +539,26 @@ bool AccountStoreSC<MAP>::UpdateAccounts(const uint64_t& blockNum,
       if (!toAccount->GetContractAuxiliaries(is_library, scilla_version,
                                              extlibs)) {
         LOG_GENERAL(WARNING, "GetContractAuxiliaries failed");
-        error_code = PoolTxnStatus::FAIL_SCILLA_LIB;
+        error_code = ErrTxnStatus::FAIL_SCILLA_LIB;
         return false;
       }
 
       if (is_library) {
         LOG_GENERAL(WARNING, "Library being called");
-        error_code = PoolTxnStatus::FAIL_SCILLA_LIB;
+        error_code = ErrTxnStatus::FAIL_SCILLA_LIB;
         return false;
       }
 
       if (DISABLE_SCILLA_LIB && !extlibs.empty()) {
         LOG_GENERAL(WARNING, "ScillaLib disabled");
-        error_code = PoolTxnStatus::FAIL_SCILLA_LIB;
+        error_code = ErrTxnStatus::FAIL_SCILLA_LIB;
         return false;
       }
 
       std::map<Address, std::pair<std::string, std::string>> extlibs_exports;
       if (!PopulateExtlibsExports(scilla_version, extlibs, extlibs_exports)) {
         LOG_GENERAL(WARNING, "PopulateExtLibsExports failed");
-        error_code = PoolTxnStatus::FAIL_SCILLA_LIB;
+        error_code = ErrTxnStatus::FAIL_SCILLA_LIB;
         return false;
       }
 
@@ -566,7 +566,7 @@ bool AccountStoreSC<MAP>::UpdateAccounts(const uint64_t& blockNum,
       if (!ExportCallContractFiles(*toAccount, transaction, scilla_version,
                                    extlibs_exports)) {
         LOG_GENERAL(WARNING, "ExportCallContractFiles failed");
-        error_code = PoolTxnStatus::FAIL_SCILLA_LIB;
+        error_code = ErrTxnStatus::FAIL_SCILLA_LIB;
         return false;
       }
 
@@ -574,7 +574,7 @@ bool AccountStoreSC<MAP>::UpdateAccounts(const uint64_t& blockNum,
 
       if (!this->DecreaseBalance(fromAddr, gasDeposit)) {
         LOG_GENERAL(WARNING, "DecreaseBalance failed");
-        error_code = PoolTxnStatus::MATH_ERROR;
+        error_code = ErrTxnStatus::MATH_ERROR;
         return false;
       }
 
@@ -664,7 +664,7 @@ bool AccountStoreSC<MAP>::UpdateAccounts(const uint64_t& blockNum,
       boost::multiprecision::uint128_t gasRefund;
       if (!SafeMath<boost::multiprecision::uint128_t>::mul(
               gasRemained, transaction.GetGasPrice(), gasRefund)) {
-        error_code = PoolTxnStatus::MATH_ERROR;
+        error_code = ErrTxnStatus::MATH_ERROR;
         return false;
       }
 
@@ -677,7 +677,7 @@ bool AccountStoreSC<MAP>::UpdateAccounts(const uint64_t& blockNum,
                                  << transaction.GetGasLimit()
                                  << " gasRemained: " << gasRemained
                                  << ". Must be something wrong!");
-        error_code = PoolTxnStatus::MATH_ERROR;
+        error_code = ErrTxnStatus::MATH_ERROR;
         return false;
       }
 
@@ -688,7 +688,7 @@ bool AccountStoreSC<MAP>::UpdateAccounts(const uint64_t& blockNum,
         receipt.update();
 
         if (!this->IncreaseNonce(fromAddr)) {
-          error_code = PoolTxnStatus::MATH_ERROR;
+          error_code = ErrTxnStatus::MATH_ERROR;
           return false;
         }
 
@@ -706,13 +706,13 @@ bool AccountStoreSC<MAP>::UpdateAccounts(const uint64_t& blockNum,
     }
     default: {
       LOG_GENERAL(WARNING, "Txn is not typed correctly")
-      error_code = PoolTxnStatus::INCORRECT_TXN_TYPE;
+      error_code = ErrTxnStatus::INCORRECT_TXN_TYPE;
       return false;
     }
   }
 
   if (!this->IncreaseNonce(fromAddr)) {
-    error_code = PoolTxnStatus::MATH_ERROR;
+    error_code = ErrTxnStatus::MATH_ERROR;
     return false;
   }
 

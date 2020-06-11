@@ -327,7 +327,7 @@ void Node::ProcessTransactionWhenShardLeader(
   m_txnFees = 0;
 
   vector<Transaction> gasLimitExceededTxnBuffer;
-  vector<pair<TxnHash, PoolTxnStatus>> droppedTxns;
+  vector<pair<TxnHash, ErrTxnStatus>> droppedTxns;
 
   AccountStore::GetInstance().CleanStorageRootUpdateBufferTemp();
 
@@ -351,7 +351,7 @@ void Node::ProcessTransactionWhenShardLeader(
         gasLimitExceededTxnBuffer.emplace_back(t);
         continue;
       }
-      PoolTxnStatus error_code;
+      ErrTxnStatus error_code;
       if (m_mediator.m_validator->CheckCreatedTransaction(t, tr, error_code)) {
         if (!SafeMath<uint64_t>::add(m_gasUsedTotal, tr.GetCumGas(),
                                      m_gasUsedTotal)) {
@@ -420,7 +420,7 @@ void Node::ProcessTransactionWhenShardLeader(
           gasLimitExceededTxnBuffer.emplace_back(t);
           continue;
         }
-        PoolTxnStatus error_code;
+        ErrTxnStatus error_code;
         if (m_mediator.m_validator->CheckCreatedTransaction(t, tr,
                                                             error_code)) {
           if (!SafeMath<uint64_t>::add(m_gasUsedTotal, tr.GetCumGas(),
@@ -601,7 +601,7 @@ void Node::ProcessTransactionWhenShardBackup(
   m_txnFees = 0;
 
   vector<Transaction> gasLimitExceededTxnBuffer;
-  vector<pair<TxnHash, PoolTxnStatus>> droppedTxns;
+  vector<pair<TxnHash, ErrTxnStatus>> droppedTxns;
 
   AccountStore::GetInstance().CleanStorageRootUpdateBufferTemp();
 
@@ -625,7 +625,7 @@ void Node::ProcessTransactionWhenShardBackup(
         gasLimitExceededTxnBuffer.emplace_back(t);
         continue;
       }
-      PoolTxnStatus error_code;
+      ErrTxnStatus error_code;
       if (m_mediator.m_validator->CheckCreatedTransaction(t, tr, error_code)) {
         if (!SafeMath<uint64_t>::add(m_gasUsedTotal, tr.GetCumGas(),
                                      m_gasUsedTotal)) {
@@ -682,7 +682,7 @@ void Node::ProcessTransactionWhenShardBackup(
           gasLimitExceededTxnBuffer.emplace_back(t);
           continue;
         }
-        PoolTxnStatus error_code;
+        ErrTxnStatus error_code;
         if (m_mediator.m_validator->CheckCreatedTransaction(t, tr,
                                                             error_code)) {
           if (!SafeMath<uint64_t>::add(m_gasUsedTotal, tr.GetCumGas(),
@@ -791,23 +791,24 @@ std::string Node::GetAwsS3CpString(const std::string& uploadFilePath) {
 void Node::ReinstateMemPool(
     const map<Address, map<uint64_t, Transaction>>& addrNonceTxnMap,
     const vector<Transaction>& gasLimitExceededTxnBuffer,
-    const vector<pair<TxnHash, PoolTxnStatus>>& droppedTxns) {
+    const vector<pair<TxnHash, ErrTxnStatus>>& droppedTxns) {
   unique_lock<shared_timed_mutex> g(m_unconfirmedTxnsMutex);
 
   // Put remaining txns back in pool
   for (const auto& kv : addrNonceTxnMap) {
     for (const auto& nonceTxn : kv.second) {
+      LOG_GENERAL(INFO, "PendingTxn " << nonceTxn.second.GetTranID());
       t_createdTxns.insert(nonceTxn.second);
       m_unconfirmedTxns.emplace(nonceTxn.second.GetTranID(),
-                                PoolTxnStatus::PRESENT_NONCE_HIGH);
+                                ErrTxnStatus::PRESENT_NONCE_HIGH);
     }
   }
 
   for (const auto& t : gasLimitExceededTxnBuffer) {
     t_createdTxns.insert(t);
-    LOG_GENERAL(INFO, "PendingAPI " << t.GetTranID());
+    LOG_GENERAL(INFO, "PendingTxn " << t.GetTranID());
     m_unconfirmedTxns.emplace(t.GetTranID(),
-                              PoolTxnStatus::PRESENT_GAS_EXCEEDED);
+                              ErrTxnStatus::PRESENT_GAS_EXCEEDED);
   }
 
   for (const auto& txnHashStatus : droppedTxns) {
@@ -822,34 +823,34 @@ void Node::PutProcessedInUnconfirmedTxns() {
 
   for (const auto& t : t_processedTransactions) {
     m_unconfirmedTxns.emplace(
-        t.first, PoolTxnStatus::PRESENT_VALID_CONSENSUS_NOT_REACHED);
+        t.first, ErrTxnStatus::PRESENT_VALID_CONSENSUS_NOT_REACHED);
     count++;
   }
   LOG_GENERAL(INFO, "Count of txns " << count);
 }
 
-PoolTxnStatus Node::IsTxnInMemPool(const TxnHash& txhash) const {
+ErrTxnStatus Node::IsTxnInMemPool(const TxnHash& txhash) const {
   auto findTxnHashStatus =
       [txhash](shared_timed_mutex& mut,
-               const HashCodeMap& t_hashCodeMap) -> PoolTxnStatus {
+               const HashCodeMap& t_hashCodeMap) -> ErrTxnStatus {
     shared_lock<shared_timed_mutex> g(mut, defer_lock);
     // Try to lock for 100 ms
     if (!g.try_lock_for(chrono::milliseconds(100))) {
-      return PoolTxnStatus::ERROR;
+      return ErrTxnStatus::ERROR;
     }
     const auto res = t_hashCodeMap.find(txhash);
     if (res != t_hashCodeMap.end()) {
       return res->second;
     }
 
-    return PoolTxnStatus::NOT_PRESENT;
+    return ErrTxnStatus::NOT_PRESENT;
   };
 
   if (LOOKUP_NODE_MODE) {
     const auto& unconfirmStatus =
         findTxnHashStatus(m_pendingTxnsMutex, m_pendingTxns.GetHashCodeMap());
 
-    if ((unconfirmStatus != PoolTxnStatus::NOT_PRESENT)) {
+    if ((unconfirmStatus != ErrTxnStatus::NOT_PRESENT)) {
       return findTxnHashStatus(m_droppedTxnsMutex,
                                m_droppedTxns.GetHashCodeMap());
     }
@@ -862,7 +863,7 @@ PoolTxnStatus Node::IsTxnInMemPool(const TxnHash& txhash) const {
   }
 }
 
-unordered_map<TxnHash, PoolTxnStatus> Node::GetUnconfirmedTxns() const {
+unordered_map<TxnHash, ErrTxnStatus> Node::GetUnconfirmedTxns() const {
   shared_lock<shared_timed_mutex> g(m_unconfirmedTxnsMutex);
 
   return m_unconfirmedTxns;
