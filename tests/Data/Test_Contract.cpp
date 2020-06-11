@@ -29,6 +29,7 @@
 
 #include <Schnorr.h>
 #include "common/Constants.h"
+#include "common/ErrTxn.h"
 #include "depends/common/CommonIO.h"
 #include "libCrypto/Sha2.h"
 #include "libData/AccountData/Account.h"
@@ -138,7 +139,7 @@ BOOST_AUTO_TEST_CASE(loopytreecall) {
     Transaction tx(DataConversion::Pack(CHAIN_ID, 1), nonce, Address(), owner,
                    0, PRECISION_MIN_VALUE, 20000, test.code, data);
     TransactionReceipt tr;
-    PoolTxnStatus error_code;
+    ErrTxnStatus error_code;
     AccountStore::GetInstance().UpdateAccountsTemp(
         ScillaTestUtil::GetBlockNumberFromJson(test.blockchain), 1, true, tx,
         tr, error_code);
@@ -153,9 +154,10 @@ BOOST_AUTO_TEST_CASE(loopytreecall) {
     Transaction tx(DataConversion::Pack(CHAIN_ID, 1), nonce, contrAddr0, owner,
                    amount, PRECISION_MIN_VALUE, 2000000, {}, data);
     TransactionReceipt tr;
+    ErrTxnStatus error_code;
     AccountStore::GetInstance().UpdateAccountsTemp(
         ScillaTestUtil::GetBlockNumberFromJson(test.blockchain), 1, true, tx,
-        tr);
+        tr, error_code);
 
     LOG_GENERAL(INFO, "tr: " << tr.GetString());
 
@@ -318,7 +320,7 @@ BOOST_AUTO_TEST_CASE(testScillaLibrary) {
   Transaction tx1(DataConversion::Pack(CHAIN_ID, 1), nonce, NullAddress, owner,
                   0, PRECISION_MIN_VALUE, 50000, t1.code, data1);
   TransactionReceipt tr1;
-  PoolTxnStatus error_code;
+  ErrTxnStatus error_code;
   AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx1, tr1,
                                                  error_code);
   Account* account1 = AccountStore::GetInstance().GetAccountTemp(libAddr1);
@@ -514,7 +516,9 @@ BOOST_AUTO_TEST_CASE(testCrowdfunding) {
   Transaction tx0(DataConversion::Pack(CHAIN_ID, 1), nonce, NullAddress, owner,
                   0, PRECISION_MIN_VALUE, 50000, t1.code, data);
   TransactionReceipt tr0;
-  AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx0, tr0);
+  ErrTxnStatus error_code;
+  AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx0, tr0,
+                                                 error_code);
   Account* account = AccountStore::GetInstance().GetAccountTemp(contrAddr);
   // We should now have a new account.
   BOOST_CHECK_MESSAGE(account != nullptr,
@@ -530,7 +534,8 @@ BOOST_AUTO_TEST_CASE(testCrowdfunding) {
   Transaction tx1(DataConversion::Pack(CHAIN_ID, 1), nonce, contrAddr, donor1,
                   amount, PRECISION_MIN_VALUE, 50000, {}, dataDonate);
   TransactionReceipt tr1;
-  if (AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx1, tr1)) {
+  if (AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx1, tr1,
+                                                     error_code)) {
     nonce++;
   }
 
@@ -572,8 +577,8 @@ BOOST_AUTO_TEST_CASE(testCrowdfunding) {
   Transaction tx2(DataConversion::Pack(CHAIN_ID, 1), nonce, contrAddr, donor2,
                   amount2, PRECISION_MIN_VALUE, 50000, {}, dataDonate2);
   TransactionReceipt tr2;
-  if (AccountStore::GetInstance().UpdateAccountsTemp(bnum2, 1, true, tx2,
-                                                     tr2)) {
+  if (AccountStore::GetInstance().UpdateAccountsTemp(bnum2, 1, true, tx2, tr2,
+                                                     error_code)) {
     nonce++;
   }
 
@@ -604,7 +609,8 @@ BOOST_AUTO_TEST_CASE(testCrowdfunding) {
   Transaction tx3(DataConversion::Pack(CHAIN_ID, 1), nonce, contrAddr, donor1,
                   amount, PRECISION_MIN_VALUE, 50000, {}, dataDonate);
   TransactionReceipt tr3;
-  if (AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx3, tr3)) {
+  if (AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx3, tr3,
+                                                     error_code)) {
     nonce++;
   }
   uint128_t contrBal3 =
@@ -644,8 +650,8 @@ BOOST_AUTO_TEST_CASE(testCrowdfunding) {
   Transaction tx4(DataConversion::Pack(CHAIN_ID, 1), nonce, contrAddr, owner,
                   amount4, PRECISION_MIN_VALUE, 50000, {}, data4);
   TransactionReceipt tr4;
-  if (AccountStore::GetInstance().UpdateAccountsTemp(bnum4, 1, true, tx4,
-                                                     tr4)) {
+  if (AccountStore::GetInstance().UpdateAccountsTemp(bnum4, 1, true, tx4, tr4,
+                                                     error_code)) {
     nonce++;
   }
 
@@ -686,8 +692,8 @@ BOOST_AUTO_TEST_CASE(testCrowdfunding) {
   Transaction tx5(DataConversion::Pack(CHAIN_ID, 1), nonce, contrAddr, donor1,
                   amount5, PRECISION_MIN_VALUE, 50000, {}, data5);
   TransactionReceipt tr5;
-  if (AccountStore::GetInstance().UpdateAccountsTemp(bnum5, 1, true, tx5,
-                                                     tr5)) {
+  if (AccountStore::GetInstance().UpdateAccountsTemp(bnum5, 1, true, tx5, tr5,
+                                                     error_code)) {
     nonce++;
   }
 
@@ -761,7 +767,9 @@ BOOST_AUTO_TEST_CASE(testPingPong) {
   Transaction tx0(DataConversion::Pack(CHAIN_ID, 1), nonce, NullAddress, owner,
                   0, PRECISION_MIN_VALUE, 50000, t0ping.code, dataPing);
   TransactionReceipt tr0;
-  AccountStore::GetInstance().UpdateAccountsTemp(bnumPing, 1, true, tx0, tr0);
+  ErrTxnStatus error_code;
+  AccountStore::GetInstance().UpdateAccountsTemp(bnumPing, 1, true, tx0, tr0,
+                                                 error_code);
   Account* accountPing = AccountStore::GetInstance().GetAccountTemp(pingAddr);
   // We should now have a new account.
   BOOST_CHECK_MESSAGE(accountPing != nullptr,
@@ -786,7 +794,8 @@ BOOST_AUTO_TEST_CASE(testPingPong) {
   Transaction tx1(DataConversion::Pack(CHAIN_ID, 1), nonce, NullAddress, owner,
                   0, PRECISION_MIN_VALUE, 50000, t0pong.code, dataPong);
   TransactionReceipt tr1;
-  AccountStore::GetInstance().UpdateAccountsTemp(bnumPong, 1, true, tx1, tr1);
+  AccountStore::GetInstance().UpdateAccountsTemp(bnumPong, 1, true, tx1, tr1,
+                                                 error_code);
   Account* accountPong = AccountStore::GetInstance().GetAccountTemp(pongAddr);
   // We should now have a new account.
   BOOST_CHECK_MESSAGE(accountPong != nullptr,
@@ -811,7 +820,7 @@ BOOST_AUTO_TEST_CASE(testPingPong) {
                   amount, PRECISION_MIN_VALUE, 50000, {}, data);
   TransactionReceipt tr2;
   if (AccountStore::GetInstance().UpdateAccountsTemp(bnumPing, 1, true, tx2,
-                                                     tr2)) {
+                                                     tr2, error_code)) {
     nonce++;
   }
 
@@ -827,7 +836,7 @@ BOOST_AUTO_TEST_CASE(testPingPong) {
                   amount, PRECISION_MIN_VALUE, 50000, {}, data);
   TransactionReceipt tr3;
   if (AccountStore::GetInstance().UpdateAccountsTemp(bnumPong, 1, true, tx3,
-                                                     tr3)) {
+                                                     tr3, error_code)) {
     nonce++;
   }
 
@@ -847,7 +856,7 @@ BOOST_AUTO_TEST_CASE(testPingPong) {
                   amount, PRECISION_MIN_VALUE, 50000, {}, data);
   TransactionReceipt tr4;
   if (AccountStore::GetInstance().UpdateAccountsTemp(bnumPing, 1, true, tx4,
-                                                     tr4)) {
+                                                     tr4, error_code)) {
     nonce++;
   }
 
@@ -924,7 +933,9 @@ BOOST_AUTO_TEST_CASE(testChainCalls) {
   Transaction tx0(DataConversion::Pack(CHAIN_ID, 1), nonce, NullAddress, owner,
                   0, PRECISION_MIN_VALUE, 50000, tContrA.code, dataA);
   TransactionReceipt tr0;
-  AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx0, tr0);
+  ErrTxnStatus error_code;
+  AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx0, tr0,
+                                                 error_code);
   Account* accountA = AccountStore::GetInstance().GetAccountTemp(aAddr);
   // We should now have a new account.
   BOOST_CHECK_MESSAGE(accountA != nullptr, "Error with creation of contract A");
@@ -946,7 +957,8 @@ BOOST_AUTO_TEST_CASE(testChainCalls) {
   Transaction tx1(DataConversion::Pack(CHAIN_ID, 1), nonce, NullAddress, owner,
                   0, PRECISION_MIN_VALUE, 50000, tContrB.code, dataB);
   TransactionReceipt tr1;
-  AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx1, tr1);
+  AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx1, tr1,
+                                                 error_code);
   Account* accountB = AccountStore::GetInstance().GetAccountTemp(bAddr);
   // We should now have a new account.
   BOOST_CHECK_MESSAGE(accountB != nullptr, "Error with creation of contract B");
@@ -968,7 +980,8 @@ BOOST_AUTO_TEST_CASE(testChainCalls) {
   Transaction tx2(DataConversion::Pack(CHAIN_ID, 1), nonce, NullAddress, owner,
                   0, PRECISION_MIN_VALUE, 50000, tContrC.code, dataC);
   TransactionReceipt tr2;
-  AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx2, tr2);
+  AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx2, tr2,
+                                                 error_code);
   Account* accountC = AccountStore::GetInstance().GetAccountTemp(cAddr);
   // We should now have a new account.
   BOOST_CHECK_MESSAGE(accountC != nullptr, "Error with creation of contract C");
@@ -993,22 +1006,23 @@ BOOST_AUTO_TEST_CASE(testChainCalls) {
     Transaction txFundA(DataConversion::Pack(CHAIN_ID, 1), nonce, aAddr, owner,
                         100, PRECISION_MIN_VALUE, 50000, {}, m_data);
     TransactionReceipt trFundA;
+    ErrTxnStatus error_code;
     AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, txFundA,
-                                                   trFundA);
+                                                   trFundA, error_code);
     nonce++;
     // Fund contrB
     Transaction txFundB(DataConversion::Pack(CHAIN_ID, 1), nonce, bAddr, owner,
                         100, PRECISION_MIN_VALUE, 50000, {}, m_data);
     TransactionReceipt trFundB;
     AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, txFundB,
-                                                   trFundB);
+                                                   trFundB, error_code);
     nonce++;
     // Fund contrC
     Transaction txFundC(DataConversion::Pack(CHAIN_ID, 1), nonce, cAddr, owner,
                         100, PRECISION_MIN_VALUE, 50000, {}, m_data);
     TransactionReceipt trFundC;
     AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, txFundC,
-                                                   trFundC);
+                                                   trFundC, error_code);
     nonce++;
   }
 
@@ -1026,7 +1040,8 @@ BOOST_AUTO_TEST_CASE(testChainCalls) {
   Transaction tx3(DataConversion::Pack(CHAIN_ID, 1), nonce, aAddr, owner,
                   amount, PRECISION_MIN_VALUE, 50000, {}, data);
   TransactionReceipt tr3;
-  if (AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx3, tr3)) {
+  if (AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx3, tr3,
+                                                     error_code)) {
     nonce++;
   }
 
@@ -1127,7 +1142,9 @@ BOOST_AUTO_TEST_CASE(testStoragePerf) {
                     500000, t2.code, data);
     TransactionReceipt tr0;
     auto startTimeDeployment = r_timer_start();
-    AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx0, tr0);
+    ErrTxnStatus error_code;
+    AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx0, tr0,
+                                                   error_code);
     auto timeElapsedDeployment = r_timer_end(startTimeDeployment);
     nonce++;
 
@@ -1202,7 +1219,8 @@ BOOST_AUTO_TEST_CASE(testStoragePerf) {
     TransactionReceipt tr1;
 
     auto startTimeCall = r_timer_start();
-    AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx1, tr1);
+    AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx1, tr1,
+                                                   error_code);
     auto timeElapsedCall = r_timer_end(startTimeCall);
     nonce++;
 
@@ -1266,7 +1284,9 @@ BOOST_AUTO_TEST_CASE(testFungibleToken) {
                     500000, t2.code, data);
     TransactionReceipt tr0;
     auto startTimeDeployment = r_timer_start();
-    AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx0, tr0);
+    ErrTxnStatus error_code;
+    AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx0, tr0,
+                                                   error_code);
     auto timeElapsedDeployment = r_timer_end(startTimeDeployment);
     Account* account = AccountStore::GetInstance().GetAccountTemp(contrAddr);
 
@@ -1341,7 +1361,8 @@ BOOST_AUTO_TEST_CASE(testFungibleToken) {
     TransactionReceipt tr1;
 
     auto startTimeCall = r_timer_start();
-    AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx1, tr1);
+    AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx1, tr1,
+                                                   error_code);
     auto timeElapsedCall = r_timer_end(startTimeCall);
 
     LOG_GENERAL(
@@ -1429,7 +1450,9 @@ BOOST_AUTO_TEST_CASE(testNonFungibleToken) {
                     500000, t10.code, data);
     TransactionReceipt tr0;
     auto startTimeDeployment = r_timer_start();
-    AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx0, tr0);
+    ErrTxnStatus error_code;
+    AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx0, tr0,
+                                                   error_code);
     auto timeElapsedDeployment = r_timer_end(startTimeDeployment);
     Account* account = AccountStore::GetInstance().GetAccountTemp(contrAddr);
 
@@ -1560,7 +1583,8 @@ BOOST_AUTO_TEST_CASE(testNonFungibleToken) {
     TransactionReceipt tr1;
 
     auto startTimeCall = r_timer_start();
-    AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx1, tr1);
+    AccountStore::GetInstance().UpdateAccountsTemp(bnum, 1, true, tx1, tr1,
+                                                   error_code);
     auto timeElapsedCall = r_timer_end(startTimeCall);
 
     LOG_GENERAL(

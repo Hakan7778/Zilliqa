@@ -1849,6 +1849,7 @@ bool Node::ProcessTxnPacketFromLookupCore(const bytes& message,
   LOG_GENERAL(INFO, "Start check txn packet from lookup");
 
   std::vector<Transaction> checkedTxns;
+  vector<pair<TxnHash, ErrTxnStatus>> rejectTxns;
   for (const auto& txn : txns) {
     if (m_mediator.GetIsVacuousEpoch()) {
       LOG_GENERAL(WARNING, "Already in vacuous epoch, stop proc txn");
@@ -1859,10 +1860,7 @@ bool Node::ProcessTxnPacketFromLookupCore(const bytes& message,
       checkedTxns.push_back(txn);
     } else {
       LOG_GENERAL(WARNING, "Txn " << txn.GetTranID().hex() << " is not valid.");
-      {
-        unique_lock<shared_timed_mutex> g(m_unconfirmedTxnsMutex);
-        m_unconfirmedTxns.emplace(txn.GetTranID(), error);
-      }
+      rejectTxns.emplace_back(txn.GetTranID(), error);
     }
 
     processed_count++;
@@ -1872,19 +1870,19 @@ bool Node::ProcessTxnPacketFromLookupCore(const bytes& message,
     }
   }
 
-  vector<TxnHash> mempoolReject;
-
   {
     lock_guard<mutex> g(m_mutexCreatedTransactions);
     LOG_GENERAL(INFO,
                 "TxnPool size before processing: " << m_createdTxns.size());
 
     for (const auto& txn : checkedTxns) {
-      if (!m_createdTxns.insert(txn)) {
+      const auto& ret_pair = m_createdTxns.insert(txn);
+      if (!ret_pair.first) {
         {
-          mempoolReject.emplace_back(txn.GetTranID());
-          LOG_GENERAL(INFO,
-                      "Txn " << txn.GetTranID().hex() << " rejected by pool");
+          rejectTxns.emplace_back(txn.GetTranID(), ret_pair.second);
+          LOG_GENERAL(INFO, "Txn " << txn.GetTranID().hex()
+                                   << " rejected by pool due to "
+                                   << ret_pair.second);
         }
       } else {
         LOG_GENERAL(INFO, "Txn " << txn.GetTranID().hex() << " added to pool");
@@ -1898,8 +1896,8 @@ bool Node::ProcessTxnPacketFromLookupCore(const bytes& message,
 
   {
     unique_lock<shared_timed_mutex> g(m_unconfirmedTxnsMutex);
-    for (const auto& txnhash : mempoolReject) {
-      m_unconfirmedTxns.emplace(txnhash, ErrTxnStatus::MEMPOOL_REJECT);
+    for (const auto& txnhashStatus : rejectTxns) {
+      m_unconfirmedTxns.emplace(txnhashStatus);
     }
   }
 
