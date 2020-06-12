@@ -61,6 +61,11 @@ class IsolatedServer : public LookupServer,
     response = this->GetBlocknum();
   }
 
+  inline virtual void GetTransactionsForTxBlock(const Json::Value& request,
+                                                Json::Value& response) {
+    response = this->GetTransactionsForTxBlock(request[0u].asString());
+  }
+
   std::string GetMinimumGasPrice();
   std::string SetMinimumGasPrice(const std::string& gasPrice);
   Json::Value CreateTransaction(const Json::Value& _json);

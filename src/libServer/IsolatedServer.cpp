@@ -105,6 +105,12 @@ IsolatedServer::IsolatedServer(Mediator& mediator,
                          jsonrpc::JSON_OBJECT, NULL),
       &LookupServer::GetRecentTransactionsI);
 
+  AbstractServer<IsolatedServer>::bindAndAddMethod(
+      jsonrpc::Procedure("GetTransactionsForTxBlock",
+                         jsonrpc::PARAMS_BY_POSITION, jsonrpc::JSON_STRING,
+                         "param01", jsonrpc::JSON_STRING, NULL),
+      &IsolatedServer::GetTransactionsForTxBlockI);
+
   if (timeDelta > 0) {
     StartBlocknumIncrement();
   }
