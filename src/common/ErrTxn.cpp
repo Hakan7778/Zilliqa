@@ -18,15 +18,15 @@
 #include "ErrTxn.h"
 #include "libUtils/Logger.h"
 
-bool TTLTxns ::insert(const TxnHash& txhash, const ErrTxnStatus status,
-                      const uint64_t& epochNum) {
+bool TTLTxns::insert(const TxnHash& txhash, const ErrTxnStatus status,
+                     const uint64_t& epochNum) {
   m_txnHashExpiration[epochNum].emplace(txhash);
   LOG_GENERAL(INFO, "[DTXN]"
                         << "Inserted " << txhash << " at " << epochNum);
   return m_txnCode.emplace(txhash, status).second;
 }
 
-void TTLTxns ::clear(const uint64_t& epochNum, const uint& TTL) {
+void TTLTxns::clear(const uint64_t& epochNum, const unsigned int& TTL) {
   LOG_MARKER();
   if (TTL > epochNum) {
     return;
@@ -48,9 +48,9 @@ void TTLTxns ::clear(const uint64_t& epochNum, const uint& TTL) {
   }
 }
 
-void TTLTxns ::clearAll() {
+void TTLTxns::clearAll() {
   m_txnCode.clear();
   m_txnHashExpiration.clear();
 }
 
-const HashCodeMap& TTLTxns ::GetHashCodeMap() const { return m_txnCode; }
+const HashCodeMap& TTLTxns::GetHashCodeMap() const { return m_txnCode; }

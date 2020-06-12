@@ -94,7 +94,7 @@ struct TxnPool {
       } else {
         // GasPrice is higher but of same nonce
         // or same gas price and nonce but higher tranID
-        return {false, ErrTxnStatus::MEMPOOL_LOW_GAS};
+        return {false, ErrTxnStatus::MEMPOOL_SAME_NONCE_LOWER_GAS};
       }
     } else {
       HashIndex[t.GetTranID()] = t;
