@@ -19,11 +19,7 @@
 #include "libNetwork/Peer.h"
 
 #define BOOST_TEST_MODULE peer_test
-#define BOOST_TEST_DYN_LINK
 #include <boost/test/included/unit_test.hpp>
-
-using namespace std;
-using namespace boost::multiprecision;
 
 BOOST_AUTO_TEST_SUITE(peer_test)
 
